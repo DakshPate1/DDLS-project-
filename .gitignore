@@ -8,3 +8,6 @@ __pycache__/
 dist/
 build/
 .ipynb_checkpoints/
+PROJECT_CONTEXT.md
+TEAM_HANDOFF.md
+PRESENTATION_GUIDE.md
