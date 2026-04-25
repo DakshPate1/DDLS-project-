@@ -1,0 +1,77 @@
+{
+  "n_episodes": 1500,
+  "seed": 7,
+  "n_eval": 10000,
+  "config": {
+    "lr_theta": 0.003,
+    "lr_psi": 0.003,
+    "tau": 0.1,
+    "n_trajectories_per_episode": 16,
+    "optimizer": "adam"
+  },
+  "learned_params": {
+    "theta_Px": 0.18184475085422258,
+    "theta_Pxx": 0.0007824476613841422,
+    "theta_Pnl": 0.2911659090205992,
+    "psi_a0": 0.684378445203436,
+    "psi_a1": -4.473363932658547,
+    "psi_sv": 0.030227510882779363,
+    "psi_ce1": -0.34152306898934387,
+    "psi_ce2": -0.11574713276333709
+  },
+  "identified_combinations": [
+    {
+      "name": "psi_ce1-psi_ce2",
+      "learned": -0.22577593622600678,
+      "ground_truth": -0.19690000000000002,
+      "err_pct": 14.665279952263463
+    },
+    {
+      "name": "psi_sv*exp(psi_ce2)",
+      "learned": 0.026923656753052222,
+      "ground_truth": 0.02386906173524953,
+      "err_pct": 12.797298241898241
+    },
+    {
+      "name": "theta_Pxx+theta_Pnl",
+      "learned": 0.2919483566819833,
+      "ground_truth": 0.2079,
+      "err_pct": 40.42729999133397
+    },
+    {
+      "name": "theta_Px+theta_Pxx-theta_Pnl",
+      "learned": -0.10853871050499247,
+      "ground_truth": -0.010899999999999993,
+      "err_pct": 895.7679862843353
+    }
+  ],
+  "table1": [
+    {
+      "policy": "Baseline (a=0.5)",
+      "cum": 0.2212233120131779,
+      "std": 0.0951366015141198,
+      "mv": 1.2166978255393497,
+      "b_hat": 0.0
+    },
+    {
+      "policy": "Optimal (B.1 closed form)",
+      "cum": 0.7093982131985017,
+      "std": 0.7197991318355168,
+      "mv": 1.4503428181029199,
+      "b_hat": 1.7093982131985017
+    },
+    {
+      "policy": "CT-RS-q (trained)",
+      "cum": 0.7288007971231272,
+      "std": 0.791334037028661,
+      "mv": 1.415696018043088,
+      "b_hat": 1.7288007971231272
+    }
+  ],
+  "functional_gate": {
+    "mv_err_pct": 1.4482409994369738,
+    "cum_err_pct": 10.719000719940322,
+    "std_err_pct": 9.209036596069186,
+    "pass": false
+  }
+}

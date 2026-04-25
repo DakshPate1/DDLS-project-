@@ -1,0 +1,15 @@
+Table 1 — reproduced (our run vs paper)
+Policy                         | Cum Return | Std Dev |     MV | b̂*
+------------------------------------------------------------------------------
+Baseline (a=0.5)               |   0.2212  | 0.0951  | 1.2167 | 0.0000
+  (paper)                      |   0.2217  | 0.0957  | 1.2171 | --
+Optimal (B.1 closed form)      |   0.7094  | 0.7198  | 1.4503 | 1.7094
+  (paper)                      |   0.7128  | 0.7205  | 1.4532 | --
+CT-RS-q (trained)              |   0.7288  | 0.7913  | 1.4157 | 1.7288
+  (paper)                      |   0.8163  | 0.8716  | 1.4365 | --
+------------------------------------------------------------------------------
+Identifiable-combination gate: 0/4
+Functional verification gate:  FAIL
+
+Note: Optimal / CT-RS-q rows use b̂* fixed-point evaluation per
+Algorithm 1 (outer OCE). Baseline does not depend on b_0.
