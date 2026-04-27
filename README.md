@@ -14,7 +14,7 @@ This repo reproduces the paper's main results (Table 1, Figure 1, Figure 2) and 
 
 **Three phases:**
 - **Phase 1 (done):** Reproduce the single-agent continuous-time risk-sensitive q-learning results.
-- **Phase 2 (in progress):** Federated extension — Local / FedAvg / PF-CT-RS-q across 4 heterogeneous worker markets with different dynamics and risk preferences.
+- **Phase 2 (done):** Federated extension — Local / FedAvg / PF-CT-RS-q across 4 heterogeneous worker markets with different dynamics and risk preferences.
 - **Phase 3 (planned):** Decentralized extension — gossip-based consensus on ring and fully-connected topologies, no central server.
 
 ---
@@ -29,51 +29,116 @@ This repo reproduces the paper's main results (Table 1, Figure 1, Figure 2) and 
 
 MV objective reproduced within 1.5% of the paper. Baseline and Optimal within Monte Carlo noise.
 
-**Key finding:** The B.2 parameterization has a structural non-identifiability — `ψ_ce1` and `ψ_ce2` enter the q-function loss only through their difference. Individual parameter convergence is impossible; the identified combination `(ψ_ce1 − ψ_ce2)` converges consistently. This motivates the federated design: vanilla FedAvg on raw parameters fails because each worker drifts to a different point in the null-space.
+**Key finding:** The B.2 parameterization has a structural non-identifiability — `ψ_ce1` and `ψ_ce2` enter the q-function loss only through their difference. Individual parameter convergence is impossible; the identified combination `(ψ_ce1 − ψ_ce2)` converges consistently. This motivates the federated design: vanilla FedAvg on raw parameters can be suboptimal because each worker may drift to a different point in the null-space.
+
+---
+
+## Phase 2: Federated Extension
+
+Phase 2 studies whether CT-RS-q remains effective under distributed training across **4 heterogeneous worker markets** plus **1 held-out regime**.
+
+We compare three strategies:
+
+1. **Local** — each worker trains independently with no communication  
+2. **FedAvg** — all parameters are averaged after each federated round  
+3. **PF-CT-RS-q** — a personalized federated variant where only `theta_Pxx` and `psi_sv` are globally shared, while the remaining parameters stay local  
+
+### Motivation
+
+The main question is whether **full parameter sharing** is too coarse in heterogeneous market environments.  
+Because workers face different local dynamics and risk profiles, a small shared/global core may outperform full averaging on the **risk-sensitive objective**, even when raw returns remain similar.
+
+### Experimental setup
+
+We evaluated all three methods at three budgets:
+
+- **100 episodes per worker**
+- **300 episodes per worker**
+- **600 episodes per worker**
+
+Each experiment reports:
+
+- average own-regime mean-variance objective
+- average held-out mean-variance objective
+- average own-regime cumulative return
+- average held-out cumulative return
+
+---
+
+## Phase 2 Results
+
+At short and intermediate budgets, the three methods are often close, and the ranking is not fully stable.  
+However, at the largest training budget (**600 episodes**), **PF-CT-RS-q** achieves the best performance on the **mean-variance objective** both on workers’ own regimes and on the held-out regime, while cumulative returns remain nearly identical across methods.
+
+### 600-episode summary
+
+| Method | Avg Own MV | Avg Held-out MV | Avg Own Return | Avg Held-out Return |
+|---|---:|---:|---:|---:|
+| Local | 1.2128 | 1.2916 | 0.6415 | 0.9541 |
+| FedAvg | 1.1576 | 1.2913 | 0.6424 | 0.9563 |
+| PF-CT-RS-q | **1.2189** | **1.3012** | 0.6418 | 0.9560 |
+
+**Takeaway:** full parameter averaging is competitive on raw return, but a **personalized partial-sharing strategy** gives the strongest performance on the **risk-sensitive mean-variance objective** at the largest training budget.
+
+### Main figure
+
+![Main Figure](plots/federated_main_figure.png)
+
+*Held-out mean-variance objective across training budgets for Local, FedAvg, and PF-CT-RS-q.*
 
 ---
 
 ## Structure
 
-```
+```text
 src/
-  sde.py              # Euler-Maruyama portfolio SDE (Eq. 35)
-  models.py           # J_θ and q_ψ parameterizations (Appendix B.2)
-  policies.py         # baseline / optimal (B.1) / trained Gaussian policy
-  metrics.py          # MV objective, find_bhat_star fixed-point
-  ct_rs_q.py          # Algorithm 2 trainer (Adam, batched episodes)
+  sde.py               # Euler-Maruyama portfolio SDE (Eq. 35)
+  models.py            # J_θ and q_ψ parameterizations (Appendix B.2)
+  policies.py          # baseline / optimal (B.1) / trained Gaussian policy
+  metrics.py           # MV objective, find_bhat_star fixed-point
+  ct_rs_q.py           # Algorithm 2 trainer (Adam, batched episodes)
 
 experiments/
-  reproduce.py        # full Table 1 + Figure 1 + Figure 2 pipeline
-  check_convergence.py # single-shot sanity check with pass/fail summary
+  reproduce.py                 # full Table 1 + Figure 1 + Figure 2 pipeline
+  check_convergence.py         # single-shot sanity check with pass/fail summary
+  federated_exp.py             # Phase 2 federated experiments
+  plot_fed_exp.py              # main Phase 2 plot
 
 plots/
   figure1_convergence.png
   figure2_time_evolution.png
+  federated_main_figure.png
 
 results/
   table1.txt
   metrics.json
+  federated_metrics.json
+  federated_metrics_eps300.json
+  federated_metrics_eps600.json
   history.npz
 ```
-
 ---
 
 ## Quickstart
 
 ```bash
-# Full reproduction (~3 min)
+# Full Phase 1 reproduction
 python -m experiments.reproduce --eps 1500 --seed 7
 
-# Quick sanity check (~1 min)
+# Quick Phase 1 sanity check
 python -m experiments.check_convergence
+
+# Phase 2 federated runs
+python -m experiments.federated_exp --eps 100 --local-eps 25 --n-eval 1000 --method all
+python -m experiments.federated_exp --eps 300 --local-eps 50 --n-eval 2000 --method all
+python -m experiments.federated_exp --eps 600 --local-eps 100 --n-eval 3000 --method all
+
+# Generate the main Phase 2 figure
+python -m experiments.plot_main_federated_figure
 
 # Top-to-bottom smoke test of all modules
 python walkthrough.py
 ```
-
-Outputs land in `plots/` and `results/`.
-
 ---
 
 ## Implementation Notes
@@ -92,6 +157,7 @@ The paper's Algorithm 2 pseudocode underspecifies three things we resolved:
 numpy
 torch
 matplotlib
+pandas
 ```
 
 No other dependencies.
