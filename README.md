@@ -116,7 +116,7 @@ results/
   federated_metrics_eps300.json
   federated_metrics_eps600.json
   history.npz
-
+```
 ---
 
 ## Quickstart
@@ -138,7 +138,7 @@ python -m experiments.plot_main_federated_figure
 
 # Top-to-bottom smoke test of all modules
 python walkthrough.py
-
+```
 ---
 
 ## Implementation Notes
@@ -153,7 +153,6 @@ The paper's Algorithm 2 pseudocode underspecifies three things we resolved:
 
 ## Requirements
 
-```
 numpy
 torch
 matplotlib
