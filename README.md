@@ -153,6 +153,7 @@ The paper's Algorithm 2 pseudocode underspecifies three things we resolved:
 
 ## Requirements
 
+```
 numpy
 torch
 matplotlib
