@@ -133,6 +133,16 @@ class FederatedWorker:
         )
         self.trainer = CTRSQTrainer(self.J, self.Q, self.sde, X0=self.x0, config=self.cfg)
 
+        # Pin the null-space flat direction: ψ_ce1 and ψ_ce2 enter q_ψ only
+        # through their difference, so both cannot be identified individually.
+        # Freeze ψ_ce2 at its warm-start value; only ψ_ce1 updates freely.
+        # Without this, each worker drifts to a different (ψ_ce1, ψ_ce2) pair
+        # making their identified combination incomparable across workers.
+        self.Q.psi_ce2.requires_grad_(False)
+        self.trainer.psi_params = [p for p in self.trainer.psi_params if p is not self.Q.psi_ce2]
+        if self.trainer._opt_psi is not None:
+            self.trainer._opt_psi = torch.optim.Adam(self.trainer.psi_params, lr=self.cfg.lr_psi)
+
     def local_train(self, n_episodes: int):
         """
         Run n_episodes of the already-implemented Phase-1 trainer.
