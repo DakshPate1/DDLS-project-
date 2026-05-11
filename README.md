@@ -15,7 +15,7 @@ This repo reproduces the paper's main results (Table 1, Figure 1, Figure 2) and 
 **Three phases:**
 - **Phase 1 (done):** Reproduce the single-agent continuous-time risk-sensitive q-learning results.
 - **Phase 2 (done):** Federated extension — Local / FedAvg / PF-CT-RS-q across 4 heterogeneous worker markets with different dynamics and risk preferences.
-- **Phase 3 (planned):** Decentralized extension — gossip-based consensus on ring and fully-connected topologies, no central server.
+- **Phase 3 (done):** Decentralized extension — gossip-based consensus on ring and fully-connected topologies, no central server.
 
 ---
 
@@ -88,6 +88,40 @@ However, at the largest training budget (**600 episodes**), **PF-CT-RS-q** achie
 
 ---
 
+## Phase 3: Decentralized Extension
+
+Phase 3 removes the central server entirely. Workers communicate only with
+graph neighbors via **gossip consensus** using Metropolis-Hastings mixing weights.
+
+Same parameter split as Phase 2: share `theta_Pxx` and `psi_sv`; keep `theta_Px`, `theta_Pnl`, `psi_a0`, `psi_a1`, `psi_ce1` local. `psi_ce2` is frozen (not updated, not shared) to pin the null-space flat direction so `psi_ce1 − psi_ce2` is absolutely identified. Held-out MV is computed under each worker's own α (risk preference transfers with the policy, not the market).
+
+**Topologies:**
+- **Ring:** each worker exchanges with its 2 cyclic neighbors (MH weight 1/3 each)
+- **FC (fully connected):** each worker exchanges with all 3 others (MH weight 1/4 each)
+
+### 600-episode summary
+
+| Method | Avg Own MV | Avg Held-out MV | Avg Own Return | Avg Held-out Return |
+|---|---:|---:|---:|---:|
+| Local | 1.2128 | 1.2916 | 0.6415 | 0.9541 |
+| FedAvg | 1.1576 | 1.2913 | 0.6424 | 0.9563 |
+| PF-CT-RS-q | **1.2189** | **1.3012** | 0.6418 | 0.9560 |
+| Dec-CT-RS-q (ring) | 1.2146 | 1.2965 | 0.6418 | 0.9560 |
+| Dec-CT-RS-q (FC) | 1.2153 | 1.2983 | 0.6399 | 0.9527 |
+
+**Takeaway:** Decentralized methods recover most of the Local baseline's own-regime
+performance and beat FedAvg on the risk-sensitive objective — without a central server.
+FC topology marginally outperforms ring due to higher connectivity. Neither matches
+PF-CT-RS-q, which uses regime-aware aggregation weights only possible with a server.
+
+### Main figure
+
+![Figure 4](plots/figure4_decentralized_comparison.png)
+
+*Own-regime and held-out MV for all 5 methods at 600 episodes per worker.*
+
+---
+
 ## Structure
 
 ```text
@@ -97,17 +131,21 @@ src/
   policies.py          # baseline / optimal (B.1) / trained Gaussian policy
   metrics.py           # MV objective, find_bhat_star fixed-point
   ct_rs_q.py           # Algorithm 2 trainer (Adam, batched episodes)
+  decentralized.py     # gossip mechanics: adjacency, MH weights, gossip_step
 
 experiments/
   reproduce.py                 # full Table 1 + Figure 1 + Figure 2 pipeline
   check_convergence.py         # single-shot sanity check with pass/fail summary
   federated_exp.py             # Phase 2 federated experiments
   plot_fed_exp.py              # main Phase 2 plot
+  decentralized_exp.py         # Phase 3 decentralized experiments (5 methods)
+  plot_dec_exp.py              # Phase 3 figure 4
 
 plots/
   figure1_convergence.png
   figure2_time_evolution.png
   federated_main_figure.png
+  figure4_decentralized_comparison.png
 
 results/
   table1.txt
@@ -115,6 +153,7 @@ results/
   federated_metrics.json
   federated_metrics_eps300.json
   federated_metrics_eps600.json
+  decentralized_metrics_eps600.json
   history.npz
 ```
 ---
@@ -135,6 +174,12 @@ python -m experiments.federated_exp --eps 600 --local-eps 100 --n-eval 3000 --me
 
 # Generate the main Phase 2 figure
 python -m experiments.plot_main_federated_figure
+
+# Phase 3 decentralized run (all 5 methods)
+python -m experiments.decentralized_exp --eps 600 --local-eps 100 --n-eval 3000
+
+# Generate Phase 3 figure 4
+python -m experiments.plot_dec_exp
 
 # Top-to-bottom smoke test of all modules
 python walkthrough.py
